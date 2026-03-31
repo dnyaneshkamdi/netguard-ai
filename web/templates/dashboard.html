@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetGuard AI — Security Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff41;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: #111;
+            border-bottom: 2px solid #00ff41;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 22px; color: #00ff41; }
+        .header h1 span { color: #ff4444; }
+        .status-badge {
+            background: #001a00;
+            border: 1px solid #00ff41;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #00ff41;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 25px 30px;
+        }
+        .stat-card {
+            background: #111;
+            border: 1px solid #00ff41;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-card .number {
+            font-size: 42px;
+            font-weight: bold;
+            color: #00ff41;
+        }
+        .stat-card .number.red   { color: #ff4444; }
+        .stat-card .number.yellow{ color: #ffaa00; }
+        .stat-card .label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        /* Threats Section */
+        .section {
+            padding: 0 30px 25px;
+        }
+        .section h2 {
+            font-size: 16px;
+            color: #00ff41;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* Threat Cards */
+        .threat-card {
+            background: #111;
+            border-left: 4px solid #ff4444;
+            border-radius: 4px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+        }
+        .threat-card.medium { border-left-color: #ffaa00; }
+        .threat-card.low    { border-left-color: #00aa00; }
+
+        .threat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .threat-type {
+            font-size: 15px;
+            font-weight: bold;
+            color: #ff4444;
+        }
+        .threat-card.medium .threat-type { color: #ffaa00; }
+
+        .severity-badge {
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #ff4444;
+            color: #000;
+        }
+        .severity-badge.medium { background: #ffaa00; }
+        .severity-badge.low    { background: #00aa00; }
+
+        .threat-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            font-size: 13px;
+            color: #aaa;
+        }
+        .threat-details span { color: #00ff41; }
+
+        /* Scan Button */
+        .scan-btn {
+            display: block;
+            margin: 0 30px 25px;
+            padding: 12px;
+            background: #001a00;
+            border: 2px solid #00ff41;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            width: calc(100% - 60px);
+            transition: all 0.2s;
+        }
+        .scan-btn:hover {
+            background: #00ff41;
+            color: #000;
+        }
+
+        /* Last scan */
+        .last-scan {
+            text-align: center;
+            color: #444;
+            font-size: 12px;
+            padding-bottom: 20px;
+        }
+
+        /* No threats */
+        .no-threats {
+            text-align: center;
+            color: #444;
+            padding: 30px;
+            border: 1px dashed #333;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🛡️ NetGuard <span>AI</span> — Security Dashboard</h1>
+    <div class="status-badge" id="statusBadge">⚡ {{ data.status }}</div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="number" id="totalAnalyzed">{{ data.total_analyzed }}</div>
+        <div class="label">Logs Analyzed</div>
+    </div>
+    <div class="stat-card">
+        <div class="number red" id="threatsFound">{{ data.threats_found }}</div>
+        <div class="label">Threats Found</div>
+    </div>
+    <div class="stat-card">
+        <div class="number yellow" id="activeThreat">{{ data.threats|length }}</div>
+        <div class="label">Active Threats</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">AWS</div>
+        <div class="label">Cloud Provider</div>
+    </div>
+</div>
+
+<!-- Manual Scan Button -->
+<button class="scan-btn" onclick="manualScan()">
+    🔍 RUN MANUAL SCAN NOW
+</button>
+
+<!-- Threats List -->
+<div class="section">
+    <h2>⚠️ DETECTED THREATS</h2>
+    <div id="threatsList">
+        {% if data.threats %}
+            {% for threat in data.threats %}
+            <div class="threat-card {{ threat.severity|lower }}">
+                <div class="threat-header">
+                    <span class="threat-type">🚨 {{ threat.threat_type }}</span>
+                    <span class="severity-badge {{ threat.severity|lower }}">
+                        {{ threat.severity }}
+                    </span>
+                </div>
+                <div class="threat-details">
+                    <div>Source IP: <span>{{ threat.src_ip }}</span></div>
+                    <div>Packets: <span>{{ threat.total_packets }}</span></div>
+                    <div>Ports: <span>{{ threat.affected_ports[:3] }}</span></div>
+                    <div colspan="3">{{ threat.description }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-threats">
+                ✅ Abhi koi active threat nahi hai — system monitoring chal raha hai
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="last-scan">Last Scan: <span id="lastScan">{{ data.last_scan }}</span></div>
+
+<script>
+    // Har 10 seconds mein auto refresh
+    setInterval(async () => {
+        const res  = await fetch('/api/status');
+        const data = await res.json();
+        document.getElementById('totalAnalyzed').textContent = data.total_analyzed;
+        document.getElementById('threatsFound').textContent  = data.threats_found;
+        document.getElementById('activeThreat').textContent  = data.threat_count;
+        document.getElementById('statusBadge').textContent   = '⚡ ' + data.status;
+        document.getElementById('lastScan').textContent      = data.last_scan;
+    }, 10000);
+
+    // Manual scan
+    async function manualScan() {
+        const btn = document.querySelector('.scan-btn');
+        btn.textContent = '⏳ Scanning...';
+        btn.disabled    = true;
+
+        const res  = await fetch('/api/scan');
+        const data = await res.json();
+
+        btn.textContent = '🔍 RUN MANUAL SCAN NOW';
+        btn.disabled    = false;
+
+        if (data.success) {
+            alert(`✅ Scan complete! ${data.threats_found} threat(s) found.`);
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>
