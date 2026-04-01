@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  netguard-ai:
+    build: .
+    container_name: netguard-ai
+    ports:
+      - "5000:5000"
+    environment:
+      - AWS_REGION=ap-south-1
+      - S3_BUCKET_NAME=netguard-logs-dnyanesh
+    env_file:
+      - .env
+    volumes:
+      - ./models:/app/models
+      - ./docs:/app/docs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: netguard-network
+    
